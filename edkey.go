@@ -13,7 +13,7 @@ import (
 
 func main() {
 	c := cli.New()
-	c.HelpMsg = "edkey sign|verify|create"
+	c.HelpMsg = "edkey create|sign|verify"
 	c.HandleFunc("create", create)
 	c.HandleFunc("sign", sign)
 	c.HandleFunc("verify", verify)
