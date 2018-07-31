@@ -50,17 +50,41 @@ func create(args []string) {
 }
 
 func sign(args []string) {
+	if len(args) < 2 {
+		log.Fatal("Usage: edkey sign KEYFILE")
+	}
+
+	seckey := func() ed.PrivateKey {
+		f, err := os.Open(args[1])
+		if err != nil {
+			log.Fatal(err)
+		}
+		b, err := ioutil.ReadAll(f)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		k := make([]byte, 64)
+		if i, err := hex.Decode(k, b[:128]); err != nil {
+			log.Fatal(err)
+		} else if i < 64 {
+			log.Fatal("keyfile is the wrong length")
+		}
+		return k
+	}()
+
 	m, err := ioutil.ReadAll(os.Stdin)
 	if err != nil {
 		log.Fatal(err)
 	}
-	sig := ed.Sign(SecKey, m)
+
+	sig := ed.Sign(seckey, m)
 	fmt.Printf("%x\n", sig)
 }
 
 func verify(args []string) {
-	if len(args) < 1 {
-		log.Fatal("crap")
+	if len(args) < 3 {
+		log.Fatal("Usage: edkey verify SIGNATURE KEYFILE")
 	}
 
 	sig, err := hex.DecodeString(args[1])
@@ -68,9 +92,28 @@ func verify(args []string) {
 		log.Fatal(err)
 	}
 
+	pubkey := func() ed.PublicKey {
+		f, err := os.Open(args[2])
+		if err != nil {
+			log.Fatal(err)
+		}
+		b, err := ioutil.ReadAll(f)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		k := make([]byte, 32)
+		if i, err := hex.Decode(k, b[:64]); err != nil {
+			log.Fatal(err)
+		} else if i < 32 {
+			log.Fatal("keyfile is the wrong length")
+		}
+		return k
+	}()
+
 	m, err := ioutil.ReadAll(os.Stdin)
 
-	if ed.Verify(PubKey, m, sig) {
+	if ed.Verify(pubkey, m, sig) {
 		fmt.Println("good")
 	} else {
 		fmt.Println("bad")
